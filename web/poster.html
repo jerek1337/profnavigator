@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Плакат — ПрофНавигатор FinTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #d9dde6; font-family: "Golos Text", system-ui, sans-serif; color: #1C2233; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page {
+    position: relative; width: 210mm; height: 297mm; margin: 12mm auto; padding: 22mm 18mm 18mm;
+    background-color: #F4F7FC;
+    background-image: linear-gradient(#DCE5F3 1px, transparent 1px), linear-gradient(90deg, #DCE5F3 1px, transparent 1px);
+    background-size: 5mm 5mm;
+    display: flex; flex-direction: column;
+  }
+  h1 { margin: 0; font: 700 21mm/1.02 "Unbounded", sans-serif; color: #13266B; letter-spacing: -.02em; }
+  .sub { margin: 8mm 0 0; font-size: 7mm; line-height: 1.3; max-width: 140mm; }
+  .qr { margin: 14mm 0 0; width: 92mm; height: 92mm; padding: 5mm; background: #fff; box-shadow: inset 0 0 0 .8mm #1D3FB8; }
+  .qr img { width: 100%; height: 100%; display: block; }
+  .how { margin: 8mm 0 0; font-size: 6mm; line-height: 1.35; }
+  .foot { margin-top: auto; font-size: 4.2mm; color: #586277; overflow-wrap: anywhere; }
+  .hint { max-width: 210mm; margin: 0 auto; padding: 0 0 12mm; text-align: center; font-size: 14px; color: #3a4252; }
+  @media print { body { background: none; } .page { margin: 0; } .hint { display: none; } }
+</style>
+</head>
+<body>
+  <div class="page">
+    <h1>Узнай свою профессию за 3 минуты</h1>
+    <p class="sub">Чат-бот подберёт профессию будущего в финансах и технологиях и подскажет, с чего начать.</p>
+    <div class="qr"><img src="{{QR_SRC}}" alt="QR-код для перехода к чат-боту ПрофНавигатор FinTech"></div>
+    <p class="how">Наведи камеру телефона на код — откроется чат с ботом.</p>
+    <p class="foot">ПрофНавигатор FinTech<br>{{LINK}}</p>
+  </div>
+  <p class="hint">Распечатайте страницу (Ctrl+P) и повесьте рядом с доской объявлений. Метка источника меняется параметром ?source=…</p>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ПрофНавигатор FinTech</title>
+<meta name="description" content="Профориентация в финансах и технологиях за 3 минуты">
+<meta name="theme-color" content="#F4F7FC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F7FC;
+    --grid: #DCE5F3;
+    --ink: #1D3FB8;
+    --ink-deep: #13266B;
+    --ink-soft: #E6ECFA;
+    --text: #1C2233;
+    --muted: #586277;
+    --marker: #F2B705;
+    --cell: 24px;
+    --gutter: 48px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    color: var(--text);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    font: 400 16px/1.5 "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .sheet {
+    position: relative;
+    max-width: 680px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: flex;
+    flex-direction: column;
+  }
+  .top {
+    position: sticky; top: 0; z-index: 5;
+    padding: 16px 16px 12px 0;
+    background: rgba(244, 247, 252, .93);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  h1 {
+    margin: 0;
+    font: 700 clamp(19px, 5.2vw, 25px)/1.15 "Unbounded", "Golos Text", sans-serif;
+    color: var(--ink-deep);
+    letter-spacing: -0.01em;
+  }
+  .lead { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .embed .lead { display: none; }
+
+  /* Прогресс: клетки заштриховываются, как в тетради */
+  .progress { display: flex; align-items: center; gap: 12px; margin-top: 12px; min-height: var(--cell); }
+  .progress[hidden] { display: none; }
+  .cells { display: flex; gap: 4px; }
+  .cell {
+    width: var(--cell); height: var(--cell);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+    background: rgba(255, 255, 255, .6);
+  }
+  .cell.done {
+    background: repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 5px), #fff;
+    animation: ink .35s ease-out;
+  }
+  .cell.now { box-shadow: inset 0 0 0 2.5px var(--ink); }
+  .progress-label { font-size: 14px; color: var(--muted); }
+  @keyframes ink { from { transform: scale(.55); opacity: .2; } to { transform: none; opacity: 1; } }
+
+  #log {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 16px;
+    padding: 12px 16px 24px 0;
+  }
+  .msg { max-width: 62ch; }
+  .msg .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bot .text {
+    background: rgba(255, 255, 255, .8);
+    padding: 10px 14px;
+    border-radius: 4px;
+  }
+  .user { align-self: flex-end; max-width: 80%; }
+  .user .text {
+    background: var(--ink); color: #fff;
+    padding: 8px 14px;
+    border-radius: 16px 16px 4px 16px;
+  }
+  .system .text { background: #FDEBEE; color: #7F1D2B; padding: 10px 14px; border-radius: 4px; }
+
+  .choices { display: grid; gap: 8px; margin-top: 10px; }
+  .row { display: grid; grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr)); gap: 8px; }
+  .choice {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font: 500 15px/1.25 "Golos Text", system-ui, sans-serif;
+    color: var(--ink-deep);
+    text-align: left; text-decoration: none;
+    background: #fff;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .choice:hover { background: var(--ink-soft); }
+  .choice:active { transform: translateY(1px); }
+  .choice.link { background: var(--ink); color: #fff; }
+  .choice.link:hover { background: var(--ink-deep); }
+  .choice.link svg { flex: none; margin-left: auto; }
+
+  .typing { color: var(--muted); font-size: 14px; padding-left: 2px; }
+  .typing i { display: inline-block; width: 5px; height: 5px; margin-left: 3px; border-radius: 50%; background: var(--ink); animation: blink 1s infinite; }
+  .typing i:nth-child(2) { animation-delay: .15s; }
+  .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
+
+  .composer {
+    position: sticky; bottom: 0; z-index: 5;
+    display: flex; gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) 0;
+    background: rgba(244, 247, 252, .95);
+    border-top: 1px solid var(--grid);
+  }
+  .composer input {
+    flex: 1; min-width: 0; min-height: 46px;
+    padding: 0 12px;
+    font: 400 16px "Golos Text", system-ui, sans-serif;
+    color: var(--text);
+    background: #fff;
+    border: 1.5px solid #B7C4E0;
+    border-radius: 6px;
+  }
+  .composer input:focus { border-color: var(--ink); outline: none; }
+  .composer button {
+    min-height: 46px; padding: 0 16px;
+    font: 600 15px "Golos Text", system-ui, sans-serif;
+    color: #fff; background: var(--ink);
+    border: 0; border-radius: 6px; cursor: pointer;
+  }
+  .composer button:disabled { opacity: .55; cursor: default; }
+
+  :focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 480px) {
+    :root { --gutter: 34px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cell.done, .typing i { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="top">
+    <h1>ПрофНавигатор FinTech</h1>
+    <p class="lead">Подберём профессию в финансах и технологиях за 3 минуты</p>
+    <div class="progress" id="progress" hidden>
+      <div class="cells" id="cells" aria-hidden="true"></div>
+      <span class="progress-label" id="progressLabel" aria-live="polite"></span>
+    </div>
+  </header>
+
+  <main id="log" aria-live="polite" aria-relevant="additions"></main>
+
+  <form class="composer" id="composer" autocomplete="off">
+    <label class="sr-only" for="input">Сообщение</label>
+    <input id="input" maxlength="500" placeholder="Напиши ответ или вопрос">
+    <button type="submit" id="sendBtn">Отправить</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var API = "api/chat";
+  var params = new URLSearchParams(location.search);
+  var log = document.getElementById("log");
+  var form = document.getElementById("composer");
+  var input = document.getElementById("input");
+  var sendBtn = document.getElementById("sendBtn");
+  var state = { uid: null, sig: null, busy: false, last: null };
+
+  if (params.get("embed")) document.body.classList.add("embed");
+
+  function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+  function read(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+
+  function loadSession() {
+    var u = params.get("u"), s = params.get("s");
+    if (u && s) {
+      // пришли по кнопке из мессенджера — продолжаем тот же профиль
+      state.uid = u; state.sig = s; saveSession();
+      history.replaceState(null, "", location.pathname + (params.get("embed") ? "?embed=1" : ""));
+      return true;
+    }
+    state.uid = read("pn_uid"); state.sig = read("pn_sig");
+    return Boolean(state.uid && state.sig);
+  }
+  function saveSession() { store("pn_uid", state.uid); store("pn_sig", state.sig); }
+
+  function scrollDown() { window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); }
+
+  function addMessage(kind, text) {
+    var wrap = document.createElement("div");
+    wrap.className = "msg " + kind;
+    var p = document.createElement("p");
+    p.className = "text";
+    p.textContent = text;
+    wrap.appendChild(p);
+    log.appendChild(wrap);
+    return wrap;
+  }
+
+  var linkIcon = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5 2h7v7M12 2 4.5 9.5M9 12H2V5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+
+  function addBot(reply) {
+    var wrap = addMessage("bot", reply.text);
+    if (reply.meta && reply.meta.progress) setProgress(reply.meta.progress.step, reply.meta.progress.total);
+    if (!reply.buttons || !reply.buttons.length) return;
+    var box = document.createElement("div");
+    box.className = "choices";
+    reply.buttons.forEach(function (row) {
+      var r = document.createElement("div");
+      r.className = "row";
+      r.style.setProperty("--n", row.length > 3 ? 2 : row.length);
+      row.forEach(function (b) {
+        var el;
+        if (b.url) {
+          el = document.createElement("a");
+          el.href = b.url; el.target = "_blank"; el.rel = "noopener";
+          el.className = "choice link";
+          el.textContent = b.text;
+          el.insertAdjacentHTML("beforeend", linkIcon);
+        } else {
+          el = document.createElement("button");
+          el.type = "button";
+          el.className = "choice";
+          el.textContent = b.text;
+          el.dataset.action = b.action;
+          el.addEventListener("click", function () { send("action", b.action, b.text); });
+        }
+        r.appendChild(el);
+      });
+      box.appendChild(r);
+    });
+    wrap.appendChild(box);
+  }
+
+  // старые кнопки-действия убираем, чтобы не нажимать неактуальные; ссылки оставляем
+  function retireButtons() {
+    log.querySelectorAll(".choice[data-action]").forEach(function (b) {
+      var row = b.parentElement;
+      b.remove();
+      if (row && !row.children.length) row.remove();
+    });
+    log.querySelectorAll(".choices").forEach(function (c) { if (!c.children.length) c.remove(); });
+  }
+
+  function setProgress(step, total) {
+    var box = document.getElementById("progress");
+    var cells = document.getElementById("cells");
+    var label = document.getElementById("progressLabel");
+    box.hidden = false;
+    if (cells.children.length !== total) {
+      cells.innerHTML = "";
+      for (var i = 0; i < total; i++) { var c = document.createElement("span"); c.className = "cell"; cells.appendChild(c); }
+    }
+    Array.prototype.forEach.call(cells.children, function (c, i) {
+      c.classList.toggle("done", i < step);
+      c.classList.toggle("now", i === step);
+    });
+    label.textContent = step < total ? "Вопрос " + (step + 1) + " из " + total : "Тест пройден";
+  }
+
+  function showTyping() {
+    var t = document.createElement("div");
+    t.className = "typing";
+    t.setAttribute("role", "status");
+    t.innerHTML = "ПрофНавигатор пишет<i></i><i></i><i></i>";
+    log.appendChild(t);
+    scrollDown();
+    return t;
+  }
+
+  function showError(message) {
+    var wrap = addMessage("system", message);
+    var box = document.createElement("div");
+    box.className = "choices";
+    var retry = document.createElement("button");
+    retry.type = "button"; retry.className = "choice"; retry.textContent = "Повторить";
+    retry.addEventListener("click", function () {
+      box.remove();
+      if (state.last) send(state.last.kind, state.last.value, null);
+    });
+    box.appendChild(retry);
+    wrap.appendChild(box);
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    sendBtn.disabled = busy;
+  }
+
+  function send(kind, value, echo) {
+    if (state.busy) return;
+    setBusy(true);
+    state.last = { kind: kind, value: value };
+    if (echo) addMessage("user", echo);
+    retireButtons();
+    var typing = showTyping();
+    var controller = "AbortController" in window ? new AbortController() : null;
+    var timer = setTimeout(function () { if (controller) controller.abort(); }, 90000);
+
+    fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: state.uid, sig: state.sig, kind: kind, value: value }),
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      if (res.status === 429) throw new Error("rate");
+      if (!res.ok) throw new Error("http");
+      return res.json();
+    }).then(function (data) {
+      state.uid = data.uid; state.sig = data.sig; saveSession();
+      typing.remove();
+      data.replies.forEach(addBot);
+      scrollDown();
+    }).catch(function (err) {
+      typing.remove();
+      showError(err.message === "rate"
+        ? "Слишком много сообщений подряд. Подожди пару секунд и нажми «Повторить»."
+        : "Нет связи с сервером. Проверь интернет и нажми «Повторить».");
+      scrollDown();
+    }).finally(function () {
+      clearTimeout(timer);
+      setBusy(false);
+    });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text || state.busy) return;
+    input.value = "";
+    send("text", text, text);
+  });
+
+  if (loadSession()) send("action", "hello", null);
+  else send("start", params.get("source") || "", null);
+})();
+</script>
+</body>
+</html>

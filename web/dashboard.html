@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Аналитика — ПрофНавигатор FinTech</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F4F7FC; --grid:#DCE5F3; --ink:#1D3FB8; --ink-deep:#13266B; --text:#1C2233; --muted:#586277; --marker:#F2B705; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    font: 400 15px/1.5 "Golos Text", system-ui, sans-serif;
+  }
+  .sheet { position: relative; max-width: 960px; margin: 0 auto; padding: 24px 20px 48px; min-height: 100vh; }
+  h1 { margin: 0 0 4px; font: 700 clamp(20px, 4vw, 28px)/1.15 "Unbounded", sans-serif; color: var(--ink-deep); }
+  h2 { margin: 0 0 10px; font: 600 17px/1.3 "Golos Text", sans-serif; color: var(--ink-deep); }
+  .meta { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  section { background: rgba(255,255,255,.85); padding: 16px; border-radius: 4px; }
+  section.wide { grid-column: 1 / -1; }
+  table.ledger { width: 100%; border-collapse: collapse; }
+  .ledger td { padding: 7px 0; border-bottom: 1px dashed var(--grid); }
+  .ledger td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-deep); }
+  .bars { display: grid; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 40%) 1fr 36px; align-items: center; gap: 8px; font-size: 14px; }
+  .bar-track { height: 20px; }
+  .bar { height: 100%; min-width: 2px; box-shadow: inset 0 0 0 1.5px var(--ink); background: repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 5px), #fff; }
+  .bar-row span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); }
+  .days { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 120px; }
+  .day { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: 11px; color: var(--muted); }
+  .day .bar { width: 100%; }
+  form.token { display: flex; gap: 8px; max-width: 420px; }
+  input, button { font: inherit; min-height: 42px; border-radius: 6px; }
+  input { flex: 1; padding: 0 10px; border: 1.5px solid #B7C4E0; }
+  button { padding: 0 16px; border: 0; color: #fff; background: var(--ink); cursor: pointer; }
+  .error { color: #7F1D2B; background: #FDEBEE; padding: 10px 14px; border-radius: 4px; }
+  :focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+  @media (max-width: 520px) { .sheet { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>Аналитика ПрофНавигатора</h1>
+  <p class="meta" id="meta">Загрузка…</p>
+  <div id="app"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var params = new URLSearchParams(location.search);
+  var token = params.get("token") || "";
+  var app = document.getElementById("app");
+  var meta = document.getElementById("meta");
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function askToken(message) {
+    meta.textContent = message || "Введите токен администратора (ADMIN_TOKEN из .env).";
+    app.innerHTML = "";
+    var f = el("form", "token");
+    var i = el("input"); i.type = "password"; i.placeholder = "Токен"; i.setAttribute("aria-label", "Токен администратора");
+    var b = el("button", null, "Открыть"); b.type = "submit";
+    f.append(i, b);
+    f.addEventListener("submit", function (e) { e.preventDefault(); location.search = "?token=" + encodeURIComponent(i.value); });
+    app.appendChild(f);
+  }
+
+  function section(title, wide) { var s = el("section", wide ? "wide" : ""); s.appendChild(el("h2", null, title)); return s; }
+
+  function bars(title, rows, wide) {
+    var s = section(title, wide);
+    if (!rows.length) { s.appendChild(el("p", "empty", "Пока нет данных")); return s; }
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; })) || 1;
+    var box = el("div", "bars");
+    rows.forEach(function (r) {
+      var row = el("div", "bar-row");
+      var track = el("div", "bar-track");
+      var bar = el("div", "bar"); bar.style.width = (100 * r[1] / max) + "%";
+      track.appendChild(bar);
+      row.append(el("span", null, r[0]), track, el("span", null, String(r[1])));
+      box.appendChild(row);
+    });
+    s.appendChild(box);
+    return s;
+  }
+
+  function render(d) {
+    meta.textContent = "Обновлено " + d.generated_at + ". Страница обновляется каждую минуту.";
+    app.innerHTML = "";
+    var grid = el("div", "grid");
+    var s = d.summary;
+    var summary = section("Итоги");
+    var t = el("table", "ledger");
+    [["Пользователей", s.users], ["Начали тест", s.started], ["Прошли тест", s.completed],
+     ["Конверсия в результат", s.conversion + "%"], ["Перешли на fin-olimp.ru", s.finatlon_clicks],
+     ["Открыли маршрут", s.route_views], ["Вопросов к ИИ", s.qa_questions],
+     ["Получили напоминание", s.reminders_sent], ["Ошибок за 24 часа", s.errors_24h]
+    ].forEach(function (r) { var tr = el("tr"); tr.append(el("td", null, r[0]), el("td", null, String(r[1]))); t.appendChild(tr); });
+    summary.appendChild(t);
+    grid.appendChild(summary);
+
+    grid.appendChild(bars("Воронка теста", d.funnel.map(function (f) { return [f.label, f.users]; })));
+    grid.appendChild(bars("Какие профессии выпадают чаще", d.professions, true));
+
+    var daily = section("Прошли тест за 14 дней", true);
+    var days = el("div", "days");
+    var maxDay = Math.max.apply(null, d.daily.map(function (x) { return x[1]; })) || 1;
+    d.daily.forEach(function (x) {
+      var day = el("div", "day");
+      var bar = el("div", "bar"); bar.style.height = Math.max(2, 90 * x[1] / maxDay) + "px"; bar.title = x[0] + ": " + x[1];
+      day.append(el("span", null, String(x[1])), bar, el("span", null, x[0].slice(0, 2)));
+      days.appendChild(day);
+    });
+    daily.appendChild(days);
+    grid.appendChild(daily);
+
+    grid.appendChild(bars("Любимые предметы", d.subjects));
+    grid.appendChild(bars("Классы", d.grades));
+    grid.appendChild(bars("Цели", d.goals));
+    grid.appendChild(bars("Профиль «Финатлона»", d.profiles));
+    grid.appendChild(bars("Откуда приходят", d.sources));
+    grid.appendChild(bars("Источник ответа", d.providers));
+    app.appendChild(grid);
+  }
+
+  function load() {
+    fetch("api/stats?token=" + encodeURIComponent(token), { cache: "no-store" })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) { if (!res.ok) return askToken(res.body.message); render(res.body); })
+      .catch(function () { meta.innerHTML = ""; meta.appendChild(el("span", "error", "Сервер недоступен. Страница попробует обновиться через минуту.")); });
+  }
+
+  if (!token) askToken(); else { load(); setInterval(load, 60000); }
+})();
+</script>
+</body>
+</html>
